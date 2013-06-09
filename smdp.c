@@ -40,7 +40,7 @@ int create_service(struct service_t * service,
   if (total_size > SMDP_MSG_MAX_SIZE) {
     delete_service(service);
     memset(service, 0, sizeof(struct service_t));
-    fprintf(stderr, "Service too big, reduce id size\n");
+    debug("Service too big, reduce id size\n");
     return -1;
   }
 
@@ -73,7 +73,7 @@ int start_broadcast_server() {
   socketd = socket(AF_INET, SOCK_DGRAM, 0);
 
   if(socketd == -1) {
-  	perror("socket ");
+  	derror("socket ");
   	return -1;
   }
 
@@ -81,7 +81,7 @@ int start_broadcast_server() {
                  SOL_SOCKET,
                  SO_REUSEADDR,
                  &options,sizeof(options)) == -1) {
-  	perror("setsockopt S0_REUSEADDR ");
+  	derror("setsockopt S0_REUSEADDR ");
   }
 
   memset(&local_addr, 0, sizeof(struct sockaddr_in));
@@ -90,7 +90,7 @@ int start_broadcast_server() {
   local_addr.sin_addr.s_addr = INADDR_ANY;
   /*
   if (inet_pton(AF_INET, SMDP_GROUP, &local_addr.sin_addr) == -1) {
-    perror("inet_pton local_addr");
+    derror("inet_pton local_addr");
     return -1;
   }
   */ // Is this even possible, or should I use INADDR_ANY here
@@ -100,12 +100,12 @@ int start_broadcast_server() {
   if (bind(socketd,
            (struct sockaddr *)&local_addr,
            sizeof(local_addr)) == -1) {
-    perror("bind ");
+    derror("bind ");
     return -1;
   }
 
   if (inet_pton(AF_INET, SMDP_GROUP, &multicast_req.imr_multiaddr) == -1) {
-    perror("inet_pton multicast_req");
+    derror("inet_pton multicast_req");
     return -1;
   }
 
@@ -115,7 +115,7 @@ int start_broadcast_server() {
                  IPPROTO_IP,
                  IP_ADD_MEMBERSHIP,
                  &multicast_req, sizeof(multicast_req)) == -1) {
-  	perror("setsockopt IP_ADD_MEMBERSHIP");
+  	derror("setsockopt IP_ADD_MEMBERSHIP");
   }
 
   /* Code sending and receiving on socketd */
@@ -125,7 +125,7 @@ int start_broadcast_server() {
 
 static int parse_msg(char * msg, int nb_token, char *msg_parsed[]) {
   int i;
-  printf("message received : %s\n", msg); //XXX: DEBUG ONLY, REMOVE!!!
+  debug("message received : %s\n", msg); //XXX: DEBUG ONLY
   for (i=0; i < nb_token; ++i) {
     msg_parsed[i] = strtok(msg, " \n\t\r");
     msg = NULL;
@@ -138,13 +138,13 @@ static int parse_msg(char * msg, int nb_token, char *msg_parsed[]) {
   return 0;
 }
 
-int wait_for_query(int socket, struct service_t * service) {
+int wait_for_query(int socket, const struct service_t * service) {
   ssize_t ret;
   char buff[SMDP_MSG_MAX_SIZE+1];
   char *query[2];
 
   if (!service) {
-    fprintf(stderr, "wait_for_query: Error, service uninitialized\n");
+    debug("wait_for_query: Error, service uninitialized\n");
     return -1;
   }
 
@@ -153,15 +153,15 @@ int wait_for_query(int socket, struct service_t * service) {
     ret = recvfrom(socket, buff, SMDP_MSG_MAX_SIZE, 0, NULL, 0);
     buff[SMDP_MSG_MAX_SIZE] = '\0';
     if (ret == -1) {
-      perror("recvfrom ");
+      derror("recvfrom ");
       return -1;
     } else if (parse_msg(buff, 2, query) == -1) {
-      fprintf(stderr, "wait_for_query: parse_msg error\n");
+      debug("wait_for_query: parse_msg error\n");
       continue;
     } else if (strcmp(QUERY, query[0]) != 0
                || strcmp(service->id, query[1]) != 0) {
       // Not a query, or not for us, keep on looking;
-      fprintf(stderr, "Head: %s ID: %s\n", query[0], query[1]);
+      debug("Head: %s ID: %s\n", query[0], query[1]);
       continue;
     }
 
@@ -171,38 +171,103 @@ int wait_for_query(int socket, struct service_t * service) {
   return 0;
 }
 
-static int make_service_msg(char *buff, int buff_size, struct service_t * service) {
-  if (!service) {
-    fprintf(stderr, "make_service_msg: Error, service uninitialized\n");
-    return -1;
-  }
-
+static void make_service_msg(char *buff, int buff_size, const struct service_t * service) {
   memset(buff, 0, buff_size);
   snprintf(buff, buff_size, "%s %s %s %s",
            service->id, service->protocol, service->address, service->port);
-  return 0;
 }
 
-int send_service_broadcast(int socket, struct service_t * service) {
+int get_maddr(struct sockaddr_in * dest_addr) {
+  memset(dest_addr, 0, sizeof(struct sockaddr_in));
+  dest_addr->sin_family = AF_INET;
+  dest_addr->sin_port = htons(SMDP_PORT);
+  return inet_pton(AF_INET, SMDP_GROUP, &dest_addr->sin_addr);
+}
+
+int send_service_broadcast(int socket, const struct service_t * service) {
   ssize_t ret;
   char buff[SMDP_MSG_MAX_SIZE];
   struct sockaddr_in dest_addr;
 
-  make_service_msg(buff, SMDP_MSG_MAX_SIZE, service);
+  if (!service) {
+    debug("send_service_broadcast : Error, service uninitialized\n");
+    return -1;
+  }
 
-  memset(&dest_addr, 0, sizeof(struct sockaddr_in));
-  dest_addr.sin_family = AF_INET;
-  dest_addr.sin_port = htons(SMDP_PORT);
-  //dest_addr.sin_addr.s_addr = INADDR_ANY;
-  if (inet_pton(AF_INET, SMDP_GROUP, &dest_addr.sin_addr) == -1) {
-    perror("inet_pton dest_addr ");
+  make_service_msg(buff, SMDP_MSG_MAX_SIZE, service);
+  if (get_maddr(&dest_addr) == -1) {
+    derror("get_maddr dest_addr ");
     return -1;
   }
 
   ret = sendto(socket, buff, strlen(buff), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
   if (ret == -1) {
-    perror("sendto ");
+    derror("sendto ");
     return -1;
+  }
+
+  return 0;
+}
+
+static void make_query(char *buff, int buff_size, const struct service_t * service) {
+  memset(buff, 0, buff_size);
+  snprintf(buff, buff_size, "%s %s", QUERY, service->id);
+}
+
+int send_query(int socket, const struct service_t * service) {
+  ssize_t ret;
+  char buff[SMDP_MSG_MAX_SIZE];
+  struct sockaddr_in dest_addr;
+
+  if (!service) {
+    debug("make_service_msg : Error, service uninitialized\n");
+    return -1;
+  }
+
+  make_query(buff, SMDP_MSG_MAX_SIZE, service);
+  if (get_maddr(&dest_addr) == -1) {
+    derror("get_maddr dest_addr ");
+    return -1;
+  }
+
+  ret = sendto(socket, buff, strlen(buff), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
+  if (ret == -1) {
+    derror("sendto ");
+    return -1;
+  }
+
+  return 0;
+}
+
+int wait_for_answer(int socket, struct service_t * service) {
+  ssize_t ret;
+  char buff[SMDP_MSG_MAX_SIZE+1];
+  char *answer[4];
+
+  if (!service) {
+    debug("wait_for_query: Error, service uninitialized\n");
+    return -1;
+  }
+
+  while (1) {
+    memset(buff, 0, SMDP_MSG_MAX_SIZE);
+    ret = recvfrom(socket, buff, SMDP_MSG_MAX_SIZE, 0, NULL, 0);
+    buff[SMDP_MSG_MAX_SIZE] = '\0';
+    if (ret == -1) {
+      derror("recvfrom ");
+      return -1;
+    } else if (parse_msg(buff, 4, answer) == -1) {
+      debug("wait_for_answer: parse_msg error\n");
+      continue;
+    } else if (strcmp(service->id, answer[0]) != 0) {
+      // Not an answer, or not for us, keep on looking;
+      debug("Head: %s ID: %s\n", answer[0], answer[1]);
+      continue;
+    }
+
+    delete_service(service);
+    create_service(service, answer[0], answer[1], answer[2], answer[3]);
+    return 0;
   }
 
   return 0;

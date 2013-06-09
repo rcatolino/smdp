@@ -2,15 +2,26 @@ CC=gcc #Compiler
 EDL=gcc #Linker
 CCFLAGS=-Wall -g #Compiler options
 EDLFLAGS=-Wall -g #Linker options
-EXE=smdp-test #Binary name
+SERVEREXE=smdp-test #Binary name
+CLIENTEXE=smdp-client
 DEFINES=NODEBUG #Preprocessor definitions
 ECHO=@echo
 
-EOBJ=smdp.o smdp-test.o
+LOBJ=smdp.o
+SOBJ=smdp-test.o
+COBJ=smdp-client.o
 
-$(EXE): $(EOBJ)
+all: $(SERVEREXE) $(CLIENTEXE)
+
+
+$(SERVEREXE): $(SOBJ) $(LOBJ)
 	@echo building $<
-	$(EDL) -o $(EXE) $(EDLFLAGS) $(EOBJ)
+	$(EDL) -o $(SERVEREXE) $(EDLFLAGS) $(SOBJ) $(LOBJ)
+	@echo done
+
+$(CLIENTEXE): $(COBJ) $(LOBJ)
+	@echo building $<
+	$(EDL) -o $(CLIENTEXE) $(EDLFLAGS) $(COBJ) $(LOBJ)
 	@echo done
 
 %.o : %.c *.h

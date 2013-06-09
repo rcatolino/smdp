@@ -6,7 +6,7 @@ int main(int argc, char * argv[]) {
   struct service_t service;
   int socket;
 
-  if (create_service(&service, "smdp-test", "tcp", "192.168.1.4", "5252") == -1) {
+  if (create_service(&service, "smdp-test", "", "", "") == -1) {
     printf("Error on create_service\n");
     return -1;
   }
@@ -17,10 +17,11 @@ int main(int argc, char * argv[]) {
     return -1;
   }
 
-  printf("query received\n");
-  wait_for_query(socket, &service);
-  printf("Sending service broadcast\n");
-  send_service_broadcast(socket, &service);
+  send_query(socket, &service);
+  printf("query sent\n");
+  wait_for_answer(socket, &service);
+  printf("answer recieved : %s %s://%s:%s\n",
+         service.id, service.protocol, service.address, service.port);
 
   return 0;
 }
