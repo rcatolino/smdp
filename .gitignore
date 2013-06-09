@@ -3,3 +3,5 @@
 *.o
 smdp-test
 smdp-client
+android/libs/
+android/obj/
