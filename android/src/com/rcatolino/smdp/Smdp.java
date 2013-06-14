@@ -15,8 +15,6 @@ public class Smdp {
   public native boolean createService(String id, String protocol, String address, String port);
 
   static {
-    System.loadLibrary("gstreamer_android");
-    System.loadLibrary("modgstreamer");
-    nativeClassInit();
+    System.loadLibrary("smdp");
   }
 }
