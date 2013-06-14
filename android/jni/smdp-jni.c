@@ -93,13 +93,13 @@ static jstring smdp_get_service_field(JNIEnv* env, jobject this, int field) {
   return (*env)->NewStringUTF(env, value);
 }
 
-static jboolean native_class_finalize(JNIEnv* env, jobject this) {
+static void native_class_finalize(JNIEnv* env, jobject this) {
   stop_broadcast_server(socket);
   delete_service(&service);
 }
 
 static JNINativeMethod native_methods[] = {
-  { "nativeFinalize", "()Z", (void *) native_class_finalize},
+  { "nativeFinalize", "()V", (void *) native_class_finalize},
   { "getServiceField", "(I)Ljava/lang/String;", (void *) smdp_get_service_field},
   { "sendServiceBroadcast", "()Z", (void *) smdp_send_service_broadcast},
   { "sendQuery", "()Z", (void *) smdp_send_query},

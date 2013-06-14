@@ -21,12 +21,61 @@ int create_service(struct service_t * service,
                    const char * protocol,
                    const char * address,
                    const char * port);
+/* Initialize a service data structure. This structure will be used by all
+ * following calls to the api.
+ *
+ * When you're done, don't forget to release the allocated resources by
+ * calling `delete_service`.
+ *
+ * If you intend to broadcast a capability you should fill all the structure
+ * (or your clients won't get much infos...). If you intend to query another
+ * server's capabilities, you should just fill in the `id` which must correspond
+ * to the server's one. (You can still fill in the rest, but they won't be of
+ * any use)
+ *
+ * The overall size of the data in this structure can't go over 64 bytes. Cause
+ * I was really to lazy to deal with variable-size msg over the network.
+ * If too much data is passed, this function will fail and return -1. If you
+ * didn't allocate a service_t to back the `service` arg, this function will
+ * fail and return -1.*/
+
 int delete_service(struct service_t * service);
+/* Cf `create_service` */
+
 int start_broadcast_server();
+/* Call this function before calling any network related function of the API
+ * (ie send_service/query and wait_for_service/query). Otherwise they will
+ * fail lamentably and return -1
+ */
+
 void stop_broadcast_server(int socket);
+/* Call this function when you're done with the networking part.
+ * (ie when you're done with the API)
+ */
+
 int send_service_broadcast(int socket, const struct service_t * service);
+/* Server side! */
+/* Call this function when you've received a query for your service
+ * with `wait_for_query`
+ */
+
 int send_query(int socket, const struct service_t * service);
+/* Client side! */
+/* Call this function to ask for a service's address. If a service has
+ * called `wait_for_query` with a matching service's id, it will
+ * receive your query
+ */
+
 int wait_for_answer(int socket, struct service_t * service);
+/* Client side! */
+/* Call this function to wait for an answer to your query from a service.
+ * There really ought to be a timeout for this function...
+ */
+
 int wait_for_query(int socket, const struct service_t * service);
+/* Server side! */
+/* Call this function to wait for a client to query your capabilities.
+ * You should then answer with `send_service_broadcast`
+ */
 
 #endif

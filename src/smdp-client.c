@@ -6,7 +6,7 @@ int main(int argc, char * argv[]) {
   struct service_t service;
   int socket;
 
-  if (create_service(&service, "smdp-test", "", "", "") == -1) {
+  if (create_service(&service, "remote-server", "", "", "") == -1) {
     printf("Error on create_service\n");
     return -1;
   }
