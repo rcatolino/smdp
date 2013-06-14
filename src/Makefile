@@ -1,9 +1,12 @@
+AR=ar
 CC=gcc #Compiler
 EDL=gcc #Linker
+ARFLAGS=rcs
 CCFLAGS=-Wall -g #Compiler options
 EDLFLAGS=-Wall -g #Linker options
 SERVEREXE=smdp-test #Binary name
 CLIENTEXE=smdp-client
+LIB=libsmdp.a
 DEFINES=NODEBUG #Preprocessor definitions
 ECHO=@echo
 
@@ -11,7 +14,11 @@ LOBJ=smdp.o
 SOBJ=smdp-test.o
 COBJ=smdp-client.o
 
-all: $(SERVEREXE) $(CLIENTEXE)
+all: $(SERVEREXE) $(CLIENTEXE) lib
+
+lib : $(LOBJ)
+	@echo archiving $<
+	$(AR) $(ARFLAGS) $(LIB) $(LOBJ)
 
 
 $(SERVEREXE): $(SOBJ) $(LOBJ)
