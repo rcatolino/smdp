@@ -2,6 +2,7 @@
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
+#include <poll.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -16,7 +17,8 @@
 #define SMDP_PORT 2121
 #define SMDP_GROUP "225.1.0.0"
 
-#define _assign_field(field, size) service->field = malloc(strlen(field)+1);\
+#define _assign_field(field, size) field = field ? field : "";\
+                                   service->field = malloc(strlen(field)+1);\
                                    memcpy(service->field, field, strlen(field)+1);\
                                    size += strlen(field)+1;\
 
@@ -239,10 +241,11 @@ int send_query(int socket, const struct service_t * service) {
   return 0;
 }
 
-int wait_for_answer(int socket, struct service_t * service) {
+int wait_for_answer(int socket, struct service_t * service, int timeout) {
   ssize_t ret;
   char buff[SMDP_MSG_MAX_SIZE+1];
   char *answer[4];
+  struct pollfd fds = {.fd = socket, .events = POLLIN,};
 
   if (!service) {
     debug("wait_for_query: Error, service uninitialized\n");
@@ -251,6 +254,17 @@ int wait_for_answer(int socket, struct service_t * service) {
 
   while (1) {
     memset(buff, 0, SMDP_MSG_MAX_SIZE);
+    switch (poll(&fds, 1, timeout)) {
+      case -1 :
+        derror("wait_for_answer error, poll ");
+        return -1;
+      case 0 :
+        debug("wait_for_answe timeout\n");
+        return 0;
+      default :
+        break;
+    }
+
     ret = recvfrom(socket, buff, SMDP_MSG_MAX_SIZE, 0, NULL, 0);
     buff[SMDP_MSG_MAX_SIZE] = '\0';
     if (ret == -1) {
@@ -267,7 +281,7 @@ int wait_for_answer(int socket, struct service_t * service) {
 
     delete_service(service);
     create_service(service, answer[0], answer[1], answer[2], answer[3]);
-    return 0;
+    return 1;
   }
 
   return 0;

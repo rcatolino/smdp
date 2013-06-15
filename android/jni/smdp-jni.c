@@ -49,8 +49,8 @@ static jboolean smdp_send_query(JNIEnv* env, jobject this) {
   return JNI_TRUE;
 }
 
-static jboolean smdp_wait_for_answer(JNIEnv* env, jobject this) {
-  int ret = wait_for_answer(socket, &service);
+static jboolean smdp_wait_for_answer(JNIEnv* env, jobject this, int timeout) {
+  int ret = wait_for_answer(socket, &service, timeout);
   TRY(ret, "Failed to wait for answer\n");
   LOG_DEBUG("answer recieved : %s %s://%s:%s\n",
             service.id, service.protocol, service.address, service.port);
@@ -103,7 +103,7 @@ static JNINativeMethod native_methods[] = {
   { "getServiceField", "(I)Ljava/lang/String;", (void *) smdp_get_service_field},
   { "sendServiceBroadcast", "()Z", (void *) smdp_send_service_broadcast},
   { "sendQuery", "()Z", (void *) smdp_send_query},
-  { "waitForAnswer", "()Z", (void *) smdp_wait_for_answer},
+  { "waitForAnswer", "(I)Z", (void *) smdp_wait_for_answer},
   { "waitForQuery", "()Z", (void *) smdp_wait_for_query},
   { "startBroadcastServer", "()Z", (void *) smdp_start_broadcast_server},
   { "createService",

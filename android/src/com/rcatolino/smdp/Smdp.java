@@ -9,7 +9,7 @@ public class Smdp {
   public native String getServiceField(int fieldPosition);
   public native boolean sendServiceBroadcast();
   public native boolean sendQuery();
-  public native boolean waitForAnswer();
+  public native boolean waitForAnswer(int timeout);
   public native boolean waitForQuery();
   public native boolean startBroadcastServer();
   public native boolean createService(String id, String protocol, String address, String port);

@@ -66,10 +66,15 @@ int send_query(int socket, const struct service_t * service);
  * receive your query
  */
 
-int wait_for_answer(int socket, struct service_t * service);
+int wait_for_answer(int socket, struct service_t * service, int timeout);
 /* Client side! */
 /* Call this function to wait for an answer to your query from a service.
- * There really ought to be a timeout for this function...
+ * Since you call this after a send_query you can safely assume that no
+ * such service is available after a reasonable timeout (in ms). The
+ * timeout value has the same signification as the poll one
+ * (negative value = infinity, 0 = return immediately ).
+ * This function returns 1 when an answer is received, 0 when it times out
+ * and -1 on error.
  */
 
 int wait_for_query(int socket, const struct service_t * service);

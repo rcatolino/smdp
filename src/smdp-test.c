@@ -17,10 +17,10 @@ int main(int argc, char * argv[]) {
     return -1;
   }
 
-  printf("query received\n");
   wait_for_query(socket, &service);
-  printf("Sending service broadcast\n");
+  printf("query received\n");
   send_service_broadcast(socket, &service);
+  printf("service broadcast sent\n");
 
   return 0;
 }
