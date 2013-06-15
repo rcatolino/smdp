@@ -61,7 +61,7 @@ static jboolean smdp_wait_for_answer(JNIEnv* env, jobject this, int timeout) {
     return JNI_FALSE;
   }
 
-  LOG_DEBUG("answer recieved : %s %s://%s:%s\n",
+  LOG_DEBUG("answer received : %s %s://%s:%s\n",
             service.id, service.protocol, service.address, service.port);
   return JNI_TRUE;
 }
