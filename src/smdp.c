@@ -259,7 +259,7 @@ int wait_for_answer(int socket, struct service_t * service, int timeout) {
         derror("wait_for_answer error, poll ");
         return -1;
       case 0 :
-        debug("wait_for_answe timeout\n");
+        debug("wait_for_answer timeout\n");
         return 0;
       default :
         break;

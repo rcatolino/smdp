@@ -7,8 +7,7 @@
 #define LOG_DEBUG(...) __android_log_print(ANDROID_LOG_DEBUG, "SMDP", __VA_ARGS__)
 #define LOG_ERROR(...) __android_log_print(ANDROID_LOG_ERROR, "SMDP", __VA_ARGS__)
 
-#define MAKE_C_STR(cstr, jstr) const char *cstr= (*env)->GetStringUTFChars(env, jstr, NULL);\
-                               cstr = cstr ? cstr : ""
+#define MAKE_C_STR(cstr, jstr) const char *cstr= (*env)->GetStringUTFChars(env, jstr, NULL)
 #define TRY(retval, errmsg) if (retval == -1) {\
                               LOG_ERROR(errmsg);\
                               return JNI_FALSE;\
@@ -21,10 +20,15 @@ static int socket;
 static jboolean smdp_create_service(JNIEnv *env, jobject this,
                          jstring jid, jstring jprotocol, jstring jaddress, jstring jport) {
   int ret = JNI_TRUE;
+  LOG_DEBUG("CreateService, %p, %p, %p, %p", jid, jprotocol, jaddress, jport);
   MAKE_C_STR(id, jid);
+  LOG_DEBUG("CreateService, %s", id);
   MAKE_C_STR(protocol, jprotocol);
+  LOG_DEBUG("CreateService, %s", protocol);
   MAKE_C_STR(address, jaddress);
+  LOG_DEBUG("CreateService, %s", address);
   MAKE_C_STR(port, jport);
+  LOG_DEBUG("CreateService, %s", port);
   if (create_service(&service, id, protocol, address, port) == -1) {
     LOG_ERROR("Error on create_service\n");
     ret = JNI_FALSE;
@@ -52,6 +56,11 @@ static jboolean smdp_send_query(JNIEnv* env, jobject this) {
 static jboolean smdp_wait_for_answer(JNIEnv* env, jobject this, int timeout) {
   int ret = wait_for_answer(socket, &service, timeout);
   TRY(ret, "Failed to wait for answer\n");
+  if (ret == 0) {
+    LOG_DEBUG("time out");
+    return JNI_FALSE;
+  }
+
   LOG_DEBUG("answer recieved : %s %s://%s:%s\n",
             service.id, service.protocol, service.address, service.port);
   return JNI_TRUE;
