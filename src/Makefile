@@ -42,9 +42,5 @@ $(OBJDIR)/%.o : %.c *.h $(OBJDIR)
 
 clean:
 	@echo -n cleaning repository...
-	@rm -rf *.o
-	@rm -rf *.so*
-	@rm -rf $(OBJDIR)/*.o
-	@rm -rf $(OBJDIR)/*.so*
-	@rm -f *~
+	@rm -rf $(OBJDIR)
 	@echo cleaned.

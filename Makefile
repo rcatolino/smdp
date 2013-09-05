@@ -16,5 +16,10 @@ host :
 remote :
 	cd src && make -e OBJDIR=./$(REMOTE_TATGET) SYSROOT=$(NDK_SYSROOT) TCPATH=$(NDK_TCPATH)
 
+clean :
+	cd src && make -e OBJDIR=./$(HOST_TARGET) clean
+	cd src && make -e OBJDIR=./$(REMOTE_TATGET) SYSROOT=$(NDK_SYSROOT) TCPATH=$(NDK_TCPATH) clean
+	cd android && ndk-build clean
+
 android-smdp :
 	cd android && ndk-build
