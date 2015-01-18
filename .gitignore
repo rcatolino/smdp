@@ -5,3 +5,6 @@ smdp-test
 smdp-client
 android/libs/
 android/obj/
+src/Linux-x86_64/
+src/arm-androideabi-4.7/
+
