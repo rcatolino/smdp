@@ -83,7 +83,7 @@ int wait_for_answer(int socket, struct service_t * service, int timeout);
  * and -1 on error.
  */
 
-int wait_for_query(int socket, const struct service_t * service);
+int wait_for_query(int socket, const struct service_t * service, unsigned short nb_query);
 /* Server side! */
 /* Call this function to wait for a client to query your capabilities.
  * You should then answer with `send_service_broadcast`

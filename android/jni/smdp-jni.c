@@ -76,7 +76,7 @@ static jboolean smdp_wait_for_answer(JNIEnv* env, jobject this, int timeout) {
 }
 
 static jboolean smdp_wait_for_query(JNIEnv* env, jobject this) {
-  int ret = wait_for_query(socket, &service);
+  int ret = wait_for_query(socket, &service, 0);
   TRY(ret, "Failed to wait\n");
   return JNI_TRUE;
 }

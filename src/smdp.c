@@ -136,17 +136,20 @@ static int parse_msg(char * msg, int nb_token, char *msg_parsed[]) {
   return 0;
 }
 
-int wait_for_query(int socket, const struct service_t * service) {
+int wait_for_query(int socket, const struct service_t * service, unsigned short nb_query) {
   ssize_t ret;
   char buff[SMDP_MSG_MAX_SIZE+1];
   char *query[2];
+  short count = 0;
+  short inc = (nb_query == 0) ? 0 : 1;
 
   if (!service) {
     debug("wait_for_query: Error, service uninitialized\n");
     return -1;
   }
 
-  while (1) {
+  while (count < nb_query) {
+    count += inc;
     memset(buff, 0, SMDP_MSG_MAX_SIZE);
     ret = recvfrom(socket, buff, SMDP_MSG_MAX_SIZE, 0, NULL, 0);
     buff[SMDP_MSG_MAX_SIZE] = '\0';
@@ -163,10 +166,12 @@ int wait_for_query(int socket, const struct service_t * service) {
       continue;
     }
 
-    return 0;
+    // We got a query after 'count-1' trial
+    return count-1;
   }
 
-  return 0;
+  // We failed to get a meaningfull query in 'count' trial.
+  return count;
 }
 
 static void make_service_msg(char *buff, int buff_size, const struct service_t * service) {

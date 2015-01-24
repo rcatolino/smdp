@@ -26,7 +26,7 @@ int main(int argc, char * argv[]) {
   }
 
   printf("Waiting for query on %s\n", service.id);
-  wait_for_query(socket, &service);
+  wait_for_query(socket, &service, 0);
   printf("query received\n");
   send_service_broadcast(socket, &service);
   printf("service broadcast sent\n");
