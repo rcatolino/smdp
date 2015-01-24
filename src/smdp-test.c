@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <netinet/ip.h>
 
 #include "smdp.h"
 
@@ -18,7 +19,7 @@ int main(int argc, char * argv[]) {
     return -1;
   }
 
-  socket = start_broadcast_server();
+  socket = start_broadcast_server((struct in_addr) {.s_addr = INADDR_ANY}, 0);
   if (socket == -1) {
     printf("fail\n");
     return -1;

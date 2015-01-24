@@ -1,6 +1,6 @@
-NDK_ROOT:=$(HOME)/workspace/android-ndk-r8e
+NDK_ROOT:=$(HOME)/workspace/android-ndk-r10d
 NDK_SYSROOT:=--sysroot=$(NDK_ROOT)/platforms/android-14/arch-arm/
-NDK_TCPATH:=$(NDK_ROOT)/toolchains/arm-linux-androideabi-4.7/prebuilt/linux-x86_64/bin/arm-linux-androideabi-
+NDK_TCPATH:=$(NDK_ROOT)/toolchains/arm-linux-androideabi-4.9/prebuilt/linux-x86_64/bin/arm-linux-androideabi-
 HOST_TARGET:=`uname`-`uname -m`
 REMOTE_TATGET:=arm-androideabi-4.7
 

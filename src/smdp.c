@@ -1,4 +1,4 @@
-//copyright raphael catolino, 2013
+//copyright raphael catolino, 2013, 2015
 #include <arpa/inet.h>
 #include <errno.h>
 #include <netinet/in.h>
@@ -15,7 +15,7 @@
 #define QUERY "__query"
 #define SMDP_MSG_MAX_SIZE 64
 #define SMDP_PORT 2121
-#define SMDP_GROUP "225.1.0.0"
+#define SMDP_GROUP "224.1.0.0"
 
 #define _assign_field(field, size) field = field ? field : "";\
                                    service->field = malloc(strlen(field)+1);\
@@ -66,7 +66,7 @@ void stop_broadcast_server(int socket) {
   close(socket);
 }
 
-int start_broadcast_server() {
+int start_broadcast_server(struct in_addr local_ip_address, int ifindex) {
   int socketd;
   struct ip_mreqn multicast_req;
   struct sockaddr_in local_addr;
@@ -75,7 +75,7 @@ int start_broadcast_server() {
   socketd = socket(AF_INET, SOCK_DGRAM, 0);
 
   if(socketd == -1) {
-  	derror("socket ");
+  	perror("socket ");
   	return -1;
   }
 
@@ -83,41 +83,37 @@ int start_broadcast_server() {
                  SOL_SOCKET,
                  SO_REUSEADDR,
                  &options,sizeof(options)) == -1) {
-  	derror("setsockopt S0_REUSEADDR ");
+  	perror("setsockopt S0_REUSEADDR ");
   }
 
   memset(&local_addr, 0, sizeof(struct sockaddr_in));
   local_addr.sin_family = AF_INET;
   local_addr.sin_port = htons(SMDP_PORT);
   local_addr.sin_addr.s_addr = INADDR_ANY;
-  /*
-  if (inet_pton(AF_INET, SMDP_GROUP, &local_addr.sin_addr) == -1) {
-    derror("inet_pton local_addr");
-    return -1;
-  }
-  */ // Is this even possible, or should I use INADDR_ANY here
-  	// and another sockaddr_in as a sending socket? to be continued...
 
   // Code to receive multicast datagrams on SMDP_GROUP:SMDP_PORT :
-  if (bind(socketd,
-           (struct sockaddr *)&local_addr,
-           sizeof(local_addr)) == -1) {
-    derror("bind ");
-    return -1;
-  }
-
   if (inet_pton(AF_INET, SMDP_GROUP, &multicast_req.imr_multiaddr) == -1) {
-    derror("inet_pton multicast_req");
+    perror("inet_pton multicast_req");
     return -1;
   }
 
-  multicast_req.imr_address.s_addr = INADDR_ANY;
-  multicast_req.imr_ifindex = 0;
-  if (setsockopt(socketd,
-                 IPPROTO_IP,
-                 IP_ADD_MEMBERSHIP,
+  multicast_req.imr_address = local_ip_address;
+  multicast_req.imr_ifindex = ifindex;
+  if (setsockopt(socketd, IPPROTO_IP, IP_ADD_MEMBERSHIP,
                  &multicast_req, sizeof(multicast_req)) == -1) {
-  	derror("setsockopt IP_ADD_MEMBERSHIP");
+  	perror("setsockopt IP_ADD_MEMBERSHIP");
+    return -1;
+  }
+
+  if (setsockopt(socketd, IPPROTO_IP, IP_MULTICAST_IF,
+                 &multicast_req, sizeof(multicast_req)) == -1) {
+  	perror("setsockopt IP_MULTICAST_IF");
+    return -1;
+  }
+
+  if (bind(socketd, (struct sockaddr *)&local_addr, sizeof(local_addr)) == -1) {
+    perror("bind ");
+    return -1;
   }
 
   /* Code sending and receiving on socketd */
@@ -155,7 +151,7 @@ int wait_for_query(int socket, const struct service_t * service) {
     ret = recvfrom(socket, buff, SMDP_MSG_MAX_SIZE, 0, NULL, 0);
     buff[SMDP_MSG_MAX_SIZE] = '\0';
     if (ret == -1) {
-      derror("recvfrom ");
+      perror("recvfrom ");
       return -1;
     } else if (parse_msg(buff, 2, query) == -1) {
       debug("wait_for_query: parse_msg error\n");
@@ -198,13 +194,14 @@ int send_service_broadcast(int socket, const struct service_t * service) {
 
   make_service_msg(buff, SMDP_MSG_MAX_SIZE, service);
   if (get_maddr(&dest_addr) == -1) {
-    derror("get_maddr dest_addr ");
+    perror("get_maddr dest_addr ");
     return -1;
   }
 
+  debug("Sending multicast answer : %s\n", buff);
   ret = sendto(socket, buff, strlen(buff), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
   if (ret == -1) {
-    derror("sendto ");
+    perror("sendto ");
     return -1;
   }
 
@@ -228,14 +225,14 @@ int send_query(int socket, const struct service_t * service) {
 
   make_query(buff, SMDP_MSG_MAX_SIZE, service);
   if (get_maddr(&dest_addr) == -1) {
-    derror("get_maddr dest_addr ");
-    return -1;
+    perror("get_maddr dest_addr ");
+    return -2;
   }
 
   ret = sendto(socket, buff, strlen(buff), 0, (struct sockaddr *)&dest_addr, sizeof(dest_addr));
   if (ret == -1) {
-    derror("sendto ");
-    return -1;
+    perror("sendto ");
+    return -3;
   }
 
   return 0;
@@ -248,7 +245,7 @@ int wait_for_answer(int socket, struct service_t * service, int timeout) {
   struct pollfd fds = {.fd = socket, .events = POLLIN,};
 
   if (!service) {
-    debug("wait_for_query: Error, service uninitialized\n");
+    debug("wait_for_answer: Error, service uninitialized\n");
     return -1;
   }
 
@@ -256,7 +253,7 @@ int wait_for_answer(int socket, struct service_t * service, int timeout) {
     memset(buff, 0, SMDP_MSG_MAX_SIZE);
     switch (poll(&fds, 1, timeout)) {
       case -1 :
-        derror("wait_for_answer error, poll ");
+        perror("wait_for_answer error, poll ");
         return -1;
       case 0 :
         debug("wait_for_answer timeout\n");
@@ -268,7 +265,7 @@ int wait_for_answer(int socket, struct service_t * service, int timeout) {
     ret = recvfrom(socket, buff, SMDP_MSG_MAX_SIZE, 0, NULL, 0);
     buff[SMDP_MSG_MAX_SIZE] = '\0';
     if (ret == -1) {
-      derror("recvfrom ");
+      perror("recvfrom ");
       return -1;
     } else if (parse_msg(buff, 4, answer) == -1) {
       debug("wait_for_answer: parse_msg error\n");

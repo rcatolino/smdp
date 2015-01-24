@@ -1,6 +1,8 @@
 #ifndef SMDP_H_
 #define SMDP_H_
 
+#include <netinet/ip.h>
+
 #ifdef DEBUG
   #define debug(...) printf(__VA_ARGS__)
   #define derror(a) perror(a)
@@ -42,10 +44,14 @@ int create_service(struct service_t * service,
 int delete_service(struct service_t * service);
 /* Cf `create_service` */
 
-int start_broadcast_server();
+int start_broadcast_server(struct in_addr local_ip_address, int ifindex);
 /* Call this function before calling any network related function of the API
  * (ie send_service/query and wait_for_service/query). Otherwise they will
  * fail lamentably and return -1
+ * The local_ip_address parameter is used as the multicast messages source and
+ * can be set to INADDR_ANY to let the system choose a default.
+ * The ifindex parameter is the interface index of the interface used
+ * to join the multicast group, or 0 to use the default interface.
  */
 
 void stop_broadcast_server(int socket);

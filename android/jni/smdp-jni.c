@@ -1,4 +1,5 @@
 #include <android/log.h>
+#include <netinet/ip.h>
 #include <jni.h>
 #include <stdio.h>
 
@@ -42,15 +43,23 @@ static jboolean smdp_create_service(JNIEnv *env, jobject this,
 }
 
 static jboolean smdp_start_broadcast_server(JNIEnv* env, jobject this) {
-  socket = start_broadcast_server();
+  socket = start_broadcast_server((struct in_addr) {.s_addr = INADDR_ANY}, 0);
   TRY(socket,"Failed to create server\n");
   return JNI_TRUE;
 }
 
 static jboolean smdp_send_query(JNIEnv* env, jobject this) {
   int ret = send_query(socket, &service);
-  TRY(ret, "Failed to send query\n");
-  return JNI_TRUE;
+  if (ret == -1) {
+    LOG_ERROR("Failed to send query, service not initialized");
+  } else if (ret == -2) {
+    LOG_ERROR("Failed to send query, invalid multicast group");
+  } else if (ret == -3) {
+    LOG_ERROR("Failed to send query, network error");
+  } else {
+    return JNI_TRUE;
+  }
+  return JNI_FALSE;
 }
 
 static jboolean smdp_wait_for_answer(JNIEnv* env, jobject this, int timeout) {
