@@ -8,7 +8,7 @@
 #define LOG_DEBUG(...) __android_log_print(ANDROID_LOG_DEBUG, "SMDP", __VA_ARGS__)
 #define LOG_ERROR(...) __android_log_print(ANDROID_LOG_ERROR, "SMDP", __VA_ARGS__)
 
-#define MAKE_C_STR(cstr, jstr) const char *cstr= (*env)->GetStringUTFChars(env, jstr, NULL)
+#define MAKE_C_STR(cstr, jstr) const char *cstr= jstr ? (*env)->GetStringUTFChars(env, jstr, NULL) : NULL
 #define TRY(retval, errmsg) if (retval == -1) {\
                               LOG_ERROR(errmsg);\
                               return JNI_FALSE;\
@@ -35,10 +35,10 @@ static jboolean smdp_create_service(JNIEnv *env, jobject this,
     ret = JNI_FALSE;
   }
 
-  (*env)->ReleaseStringUTFChars(env, jid, id);
-  (*env)->ReleaseStringUTFChars(env, jprotocol, protocol);
-  (*env)->ReleaseStringUTFChars(env, jaddress, address);
-  (*env)->ReleaseStringUTFChars(env, jport, port);
+  if (jid) (*env)->ReleaseStringUTFChars(env, jid, id);
+  if (jprotocol) (*env)->ReleaseStringUTFChars(env, jprotocol, protocol);
+  if (jaddress) (*env)->ReleaseStringUTFChars(env, jaddress, address);
+  if (jport) (*env)->ReleaseStringUTFChars(env, jport, port);
   return ret;
 }
 
