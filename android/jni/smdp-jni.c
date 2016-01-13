@@ -42,6 +42,11 @@ static jboolean smdp_create_service(JNIEnv *env, jobject this,
   return ret;
 }
 
+static jboolean smdp_stop_broadcast_server(JNIEnv* env, jobject this) {
+  stop_broadcast_server(socket);
+  return JNI_TRUE;
+}
+
 static jboolean smdp_start_broadcast_server(JNIEnv* env, jobject this) {
   socket = start_broadcast_server((struct in_addr) {.s_addr = INADDR_ANY}, 0);
   TRY(socket,"Failed to create server\n");
@@ -124,6 +129,7 @@ static JNINativeMethod native_methods[] = {
   { "waitForAnswer", "(I)Z", (void *) smdp_wait_for_answer},
   { "waitForQuery", "()Z", (void *) smdp_wait_for_query},
   { "startBroadcastServer", "()Z", (void *) smdp_start_broadcast_server},
+  { "stopBroadcastServer", "()Z", (void *) smdp_stop_broadcast_server},
   { "createService",
     "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Z",
     (void *) smdp_create_service},

@@ -12,7 +12,9 @@ public class Smdp {
   public native boolean waitForAnswer(int timeout);
   public native boolean waitForQuery();
   public native boolean startBroadcastServer();
+  public native boolean stopBroadcastServer();
   public native boolean createService(String id, String protocol, String address, String port);
+  public native boolean deleteService(String id);
 
   static {
     System.loadLibrary("smdp");
